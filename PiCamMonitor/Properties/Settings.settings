@@ -1,0 +1,42 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PiCamMonitor.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="PiMotionImagePath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/home/pi/mmal-images</Value>
+    </Setting>
+    <Setting Name="LocalBaseDownloadPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">G:\PiCamMonitor</Value>
+    </Setting>
+    <Setting Name="PiFps" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">15</Value>
+    </Setting>
+    <Setting Name="PiUserName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">pi</Value>
+    </Setting>
+    <Setting Name="PiPassword" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">raspberry</Value>
+    </Setting>
+    <Setting Name="PiSshHostKeyFingerprint" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">ssh-rsa 2048 xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx</Value>
+    </Setting>
+    <Setting Name="PiHost" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.2.43</Value>
+    </Setting>
+    <Setting Name="PiStreamUrl" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">http:\\192.168.2.43:8081</Value>
+    </Setting>
+    <Setting Name="DownloadInterval" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="DownloadAtStartup" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AutoStart" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="UseNotificationArea" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
