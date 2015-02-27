@@ -88,10 +88,17 @@ namespace PiCamMonitor
 
 		void UpdateAutoStart()
 		{
-			if (AutoStart.IsAutoStart(_autoStartKeyName) != Settings.Default.AutoStart)
+			//if (AutoStart.IsAutoStart(_autoStartKeyName) != Settings.Default.AutoStart)
+			//{
+			//	// need to change AutoStart
+			//	AutoStart.SetAutoStart(_autoStartKeyName, Settings.Default.AutoStart);
+			//	Log("AutoStart changed to {0}", Settings.Default.AutoStart ? "on" : "off");
+			//}
+			if (AutoStart.SetAutoStart(_autoStartKeyName, Settings.Default.AutoStart))
 			{
-				// need to change AutoStart
-				AutoStart.SetAutoStart(_autoStartKeyName, Settings.Default.AutoStart);
+				// changes were made to the registry 
+				// either changing from on to off
+				// or changing the path of the executable
 				Log("AutoStart changed to {0}", Settings.Default.AutoStart ? "on" : "off");
 			}
 		}

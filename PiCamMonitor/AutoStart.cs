@@ -62,16 +62,30 @@ namespace PiCamMonitor
 		/// </summary>
 		/// <param name="keyName">Name used to identify this application</param>
 		/// <param name="set">True => set AutoStart, False => Unset AutoStart</param>
-		public static void SetAutoStart(string keyName, bool set)
+		/// <returns>true if changes were made to the registry</returns>
+		public static bool SetAutoStart(string keyName, bool set)
 		{
-			if (set)
+			bool changed = false;
+
+			RegistryKey key = Registry.CurrentUser.CreateSubKey(runKey);
+			if (key != null)
 			{
-				SetAutoStart(keyName);
+				string keyValue = key.GetValue(keyName) as string;
+
+				if (set && keyValue != Application.ExecutablePath)
+				{
+					key.SetValue(keyName, Application.ExecutablePath);
+					changed = true;
+				}
+				if (!set && keyValue != null)
+				{
+					key.DeleteValue(keyName);
+					changed = true;
+				}
+				key.Close();
 			}
-			else
-			{
-				UnsetAutoStart(keyName);
-			}
+
+			return changed;
 		}
 
 		/// <summary>
