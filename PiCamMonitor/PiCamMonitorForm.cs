@@ -42,6 +42,7 @@ namespace PiCamMonitor
 		FileDownloader _downloader;
 		MJPEGStream _videoSource = new MJPEGStream();
 		FrameSet _frameSet = new FrameSet();
+		int _newFramesSinceLastView = 0;
 
 		const string _autoStartKeyName = "GNE_PiCamMonitor";
 
@@ -76,6 +77,7 @@ namespace PiCamMonitor
 
 		private void PiCamForm_Load(object sender, EventArgs e)
 		{
+			labelDownloadProgress.Text = "";
 			//UpdateAutoStart();
 			EnableMediaControls(false);
 			PopulateFramesetNamesCombo();
@@ -88,12 +90,6 @@ namespace PiCamMonitor
 
 		void UpdateAutoStart()
 		{
-			//if (AutoStart.IsAutoStart(_autoStartKeyName) != Settings.Default.AutoStart)
-			//{
-			//	// need to change AutoStart
-			//	AutoStart.SetAutoStart(_autoStartKeyName, Settings.Default.AutoStart);
-			//	Log("AutoStart changed to {0}", Settings.Default.AutoStart ? "on" : "off");
-			//}
 			if (AutoStart.SetAutoStart(_autoStartKeyName, Settings.Default.AutoStart))
 			{
 				// changes were made to the registry 
@@ -157,6 +153,9 @@ namespace PiCamMonitor
 					notifyIcon.BalloonTipTitle = "PiCamMonitor";
 					notifyIcon.BalloonTipText = string.Format("{0} frames downloaded from PiCam", framesDownloaded);
 					notifyIcon.ShowBalloonTip(5000);
+
+					_newFramesSinceLastView += framesDownloaded;
+					UpdateNotifyText();
 				}
 			}
 		}
@@ -443,6 +442,7 @@ namespace PiCamMonitor
 		{
 			string selectedFramesetName = (string)comboBoxFramesets.SelectedItem;
 
+			comboBoxFramesets.BeginUpdate();
 			comboBoxFramesets.Items.Clear();
 
 			string[] framesetNames = _downloader.GetFramesetNames();
@@ -467,6 +467,9 @@ namespace PiCamMonitor
 				// This will also trigger the re-building of the FrameSet
 				comboBoxFramesets.SelectedItem = selectedFramesetName;
 			}
+			// one of the above should have fired off comboBoxFramesets_SelectedIndexChanged()
+			// so no need to reset the frameset
+			comboBoxFramesets.EndUpdate();
 			
 		}
 
@@ -487,6 +490,18 @@ namespace PiCamMonitor
 		{
 			this.Visible = true;
 			this.Activate();
+			_newFramesSinceLastView = 0;
+			UpdateNotifyText();
+		}
+
+		void UpdateNotifyText()
+		{
+			string text = "PiCamMonitor";
+			if (_newFramesSinceLastView > 0)
+			{
+				text += string.Format(" - {0} new frames available", _newFramesSinceLastView);
+			}
+			this.notifyIcon.Text = text;
 		}
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
