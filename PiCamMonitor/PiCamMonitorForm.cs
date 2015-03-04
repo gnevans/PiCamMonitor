@@ -481,11 +481,6 @@ namespace PiCamMonitor
 			}
 		}
 
-		private void openToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			ShowForm();
-		}
-
 		void ShowForm()
 		{
 			this.Visible = true;
@@ -514,6 +509,39 @@ namespace PiCamMonitor
 		private void notifyIcon_MouseDoubleClick(object sender, MouseEventArgs e)
 		{
 			ShowForm();
+		}
+
+		private void openToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ShowForm();
+		}
+
+		private void viewNewFramesToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			int numNewFrames = _newFramesSinceLastView;
+			ShowForm();
+
+			if (numNewFrames > 0)
+			{
+				// need to start showing the new frames
+
+				// make sure viewing downloaded frames is selected
+				radioButtonViewDownloadedFrames.Checked = true;
+
+				// select the first item 
+				// This does mean we can't view any frames downloaded for previous days.
+				comboBoxFramesets.SelectedIndex = 0;
+
+				// update frameset/trackbar to match
+				ShowSelectedFrameset();
+
+				// calc where playing should stat from
+				int frameNum = Math.Max(_frameSet.Count - numNewFrames, 0);
+				ShowFrame(frameNum);
+
+				// and start playing
+				StartFramesetPlay();
+			}
 		}
 	}
 }
