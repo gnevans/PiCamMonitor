@@ -55,9 +55,9 @@
 			this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
 			this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.viewNewFramesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.viewNewFramesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.trackBar)).BeginInit();
 			this.groupBox1.SuspendLayout();
@@ -303,6 +303,14 @@
 			this.openToolStripMenuItem.Text = "Open";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
 			// 
+			// viewNewFramesToolStripMenuItem
+			// 
+			this.viewNewFramesToolStripMenuItem.Enabled = false;
+			this.viewNewFramesToolStripMenuItem.Name = "viewNewFramesToolStripMenuItem";
+			this.viewNewFramesToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+			this.viewNewFramesToolStripMenuItem.Text = "View New Frames";
+			this.viewNewFramesToolStripMenuItem.Click += new System.EventHandler(this.viewNewFramesToolStripMenuItem_Click);
+			// 
 			// toolStripSeparator1
 			// 
 			this.toolStripSeparator1.Name = "toolStripSeparator1";
@@ -314,13 +322,6 @@
 			this.exitToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
 			this.exitToolStripMenuItem.Text = "Exit";
 			this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
-			// 
-			// viewNewFramesToolStripMenuItem
-			// 
-			this.viewNewFramesToolStripMenuItem.Name = "viewNewFramesToolStripMenuItem";
-			this.viewNewFramesToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-			this.viewNewFramesToolStripMenuItem.Text = "View New Frames";
-			this.viewNewFramesToolStripMenuItem.Click += new System.EventHandler(this.viewNewFramesToolStripMenuItem_Click);
 			// 
 			// PiCamMonitorForm
 			// 

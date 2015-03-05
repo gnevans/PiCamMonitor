@@ -66,7 +66,7 @@ namespace PiCamMonitor
 			if (Settings.Default.UseNotificationArea)
 			{
 				// don't want Minimise button 
-				this.MinimizeBox = false;
+				//this.MinimizeBox = false;
 			}
 			else
 			{
@@ -99,66 +99,6 @@ namespace PiCamMonitor
 			}
 		}
 
-		void StartPeriodicDownloads()
-		{
-			int downloadPeriod = Settings.Default.DownloadInterval;	// in minutes
-			// use 0 if you don't want the files downloaded periodically 
-			if (downloadPeriod > 0)
-			{
-				timerDownload.Interval = downloadPeriod * 60 * 1000;
-				timerDownload.Tick += timerDownload_Tick;
-				timerDownload.Start();
-			}
-		}
-
-		void timerDownload_Tick(object sender, EventArgs e)
-		{
-			StartDownload();
-		}
-
-		private void buttonCheckForFiles_Click(object sender, EventArgs e)
-		{
-			StartDownload();
-		}
-
-		void StartDownload()
-		{
-			if (_downloader.StartDownloading())
-			{
-				labelDownloadProgress.Text = "Downloading...";
-				buttonCheckForFiles.Enabled = false;
-			}
-		}
-
-		void DownloadComplete(object sender, DownloadCompleteEventArgs e)
-		{
-			DownloadComplete(e.FramesDownloaded);
-		}
-
-		delegate void DownloadCompleteDelegate(int framesDownloaded);
-		void DownloadComplete(int framesDownloaded)
-		{
-			if (InvokeRequired)
-			{
-				BeginInvoke(new DownloadCompleteDelegate(DownloadComplete), framesDownloaded);
-				return;
-			}
-			labelDownloadProgress.Text = ""; // "Downloading Complete";
-			PopulateFramesetNamesCombo();
-			buttonCheckForFiles.Enabled = true;
-			if (framesDownloaded > 0)
-			{
-				if (WantNotificationShown())
-				{
-					notifyIcon.BalloonTipTitle = "PiCamMonitor";
-					notifyIcon.BalloonTipText = string.Format("{0} frames downloaded from PiCam", framesDownloaded);
-					notifyIcon.ShowBalloonTip(5000);
-
-					_newFramesSinceLastView += framesDownloaded;
-					UpdateNotifyText();
-				}
-			}
-		}
 
 		bool WantNotificationShown()
 		{
@@ -166,46 +106,6 @@ namespace PiCamMonitor
 			return !this.Visible;
 		}
 
-		public void Log(string format, params object[] formatParameters)
-		{
-			AddMessage(string.Format(format, formatParameters));
-		}
-
-		public void Log(Exception ex)
-		{
-			AddMessage(ex.Message);
-		}
-
-		delegate void AddMessageDelegate(string message);
-		void AddMessage(string message)
-		{
-			if (InvokeRequired)
-			{
-				BeginInvoke(new AddMessageDelegate(AddMessage), new object[] { message });
-				return;
-			}
-			// on UI thread
-			listBoxPiCam.Items.Add(DateTime.Now.ToString() + " " + message);
-			if (checkBoxTail.Checked)
-			{
-				// scroll newly added line into view
-				ShowLogTail();
-			}
-		}
-
-		private void checkBoxTail_CheckedChanged(object sender, EventArgs e)
-		{
-			if (checkBoxTail.Checked)
-			{
-				// make sure we are showing tail
-				ShowLogTail();
-			}
-		}
-
-		void ShowLogTail()
-		{
-			listBoxPiCam.TopIndex = listBoxPiCam.Items.Count - 1;
-		}
 
 		private void PiCamForm_FormClosing(object sender, FormClosingEventArgs e)
 		{
@@ -485,19 +385,9 @@ namespace PiCamMonitor
 		{
 			this.Visible = true;
 			this.Activate();
-			_newFramesSinceLastView = 0;
-			UpdateNotifyText();
+			SetNumNewFrames(0);
 		}
 
-		void UpdateNotifyText()
-		{
-			string text = "PiCamMonitor";
-			if (_newFramesSinceLastView > 0)
-			{
-				text += string.Format(" - {0} new frames available", _newFramesSinceLastView);
-			}
-			this.notifyIcon.Text = text;
-		}
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
 		{
@@ -543,5 +433,123 @@ namespace PiCamMonitor
 				StartFramesetPlay();
 			}
 		}
+
+		#region Downloading
+		void StartPeriodicDownloads()
+		{
+			int downloadPeriod = Settings.Default.DownloadInterval;	// in minutes
+			// use 0 if you don't want the files downloaded periodically 
+			if (downloadPeriod > 0)
+			{
+				timerDownload.Interval = downloadPeriod * 60 * 1000;
+				timerDownload.Tick += timerDownload_Tick;
+				timerDownload.Start();
+			}
+		}
+
+		void timerDownload_Tick(object sender, EventArgs e)
+		{
+			StartDownload();
+		}
+
+		private void buttonCheckForFiles_Click(object sender, EventArgs e)
+		{
+			StartDownload();
+		}
+
+		void StartDownload()
+		{
+			if (_downloader.StartDownloading())
+			{
+				labelDownloadProgress.Text = "Downloading...";
+				buttonCheckForFiles.Enabled = false;
+			}
+		}
+
+		void DownloadComplete(object sender, DownloadCompleteEventArgs e)
+		{
+			DownloadComplete(e.FramesDownloaded);
+		}
+
+		delegate void DownloadCompleteDelegate(int framesDownloaded);
+		void DownloadComplete(int framesDownloaded)
+		{
+			if (InvokeRequired)
+			{
+				BeginInvoke(new DownloadCompleteDelegate(DownloadComplete), framesDownloaded);
+				return;
+			}
+			labelDownloadProgress.Text = ""; // "Downloading Complete";
+			buttonCheckForFiles.Enabled = true;
+			if (framesDownloaded > 0)
+			{
+				PopulateFramesetNamesCombo();
+				if (WantNotificationShown())
+				{
+					notifyIcon.BalloonTipTitle = "PiCamMonitor";
+					notifyIcon.BalloonTipText = string.Format("{0} frames downloaded from PiCam", framesDownloaded);
+					notifyIcon.ShowBalloonTip(5000);
+
+					SetNumNewFrames(_newFramesSinceLastView + framesDownloaded);
+				}
+			}
+		}
+
+		void SetNumNewFrames(int numNewFrames)
+		{
+			_newFramesSinceLastView = numNewFrames;
+
+			string text = "PiCamMonitor";
+			if (_newFramesSinceLastView > 0)
+			{
+				text += string.Format(" - {0} new frames available", _newFramesSinceLastView);
+			}
+			notifyIcon.Text = text;
+			viewNewFramesToolStripMenuItem.Enabled = _newFramesSinceLastView > 0;
+		}
+		#endregion
+
+		#region Logging
+		public void Log(string format, params object[] formatParameters)
+		{
+			AddMessage(string.Format(format, formatParameters));
+		}
+
+		public void Log(Exception ex)
+		{
+			AddMessage(ex.Message);
+		}
+
+		delegate void AddMessageDelegate(string message);
+		void AddMessage(string message)
+		{
+			if (InvokeRequired)
+			{
+				BeginInvoke(new AddMessageDelegate(AddMessage), new object[] { message });
+				return;
+			}
+			// on UI thread
+			listBoxPiCam.Items.Add(DateTime.Now.ToString() + " " + message);
+			if (checkBoxTail.Checked)
+			{
+				// scroll newly added line into view
+				ShowLogTail();
+			}
+		}
+
+		private void checkBoxTail_CheckedChanged(object sender, EventArgs e)
+		{
+			if (checkBoxTail.Checked)
+			{
+				// make sure we are showing tail
+				ShowLogTail();
+			}
+		}
+
+		void ShowLogTail()
+		{
+			listBoxPiCam.TopIndex = listBoxPiCam.Items.Count - 1;
+		}
+		#endregion
 	}
 }
