@@ -13,8 +13,8 @@ SFTP is used to download the images.
 The frames must be saved in the format YYYYMMDD-HHMMSS-nn.jpg.  With Motion, this can be achieved by setting `picture_filename` to `%Y%m%d-%H%M%S-%q` in the .conf file.
 
 It can also monitor a UDP port and immediately react to events from the Pi.
-If using Motion, set 'on_event_start` to `./event-start.sh`.
-Then create a `event-start.sh` and add the following:
+If using Motion, set `on_event_start` to `./event-start.sh`.
+Then create a `event-start.sh` with the following contents:
 ```
 #!/bin/bash
 # Broadcast motion event start
