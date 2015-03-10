@@ -148,5 +148,14 @@ namespace PiCamMonitor.Properties {
                 return ((string)(this["EventStartSound"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowLifeFeedOnEventStart {
+            get {
+                return ((bool)(this["ShowLifeFeedOnEventStart"]));
+            }
+        }
     }
 }

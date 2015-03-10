@@ -63,12 +63,22 @@ namespace PiCamMonitor
 			{
 				// don't want Minimise button 
 				//this.MinimizeBox = false;
+
+				// Force window to be created (but not shown)
+				// This is essential for InvokeRequired()/BeginInvoke() to work
+				IntPtr dummy = Handle;
 			}
 			else
 			{
 				notifyIcon.Visible = false;
 				ShowForm();
 			}
+
+			// test
+			labelDownloadProgress.Text = "";
+			EnableMediaControls(false);
+			PopulateFramesetNamesCombo();
+
 		}
 
 		void InitialisePiCams()
@@ -109,33 +119,59 @@ namespace PiCamMonitor
 		void PiCam_EventReceived(object sender, PiCamEventArgs e)
 		{
 			string eventData = e.EventData;
-			Log("Event: {0}", eventData);
 
-			// audio event
-			string soundFilename = Settings.Default.EventStartSound;
-			if (!string.IsNullOrEmpty(soundFilename))
+			EventReceived(eventData);
+		}
+
+
+		delegate void EventReceivedDelegate(string eventData);
+		void EventReceived(string eventData)
+		{
+			if (InvokeRequired)
 			{
-				try
-				{
-					using (SoundPlayer player = new SoundPlayer(soundFilename))
-					{
-						player.Play();
-					}
-				}
-				catch (Exception ex)
-				{
-					Log(ex);
-				}
+				BeginInvoke(new EventReceivedDelegate(EventReceived), eventData);
+				return;
 			}
 
-			StartDownload();
+			Log("Event: {0}", eventData);
+
+			if (eventData.StartsWith("picam-event-start"))
+			{
+				if (Settings.Default.ShowLifeFeedOnEventStart)
+				{
+					// make sure we are visible
+					ShowForm();
+
+					// make sure live feed is selected
+					radioButtonViewLiveFeed.Checked = true;
+				}
+
+				// audio event
+				string soundFilename = Settings.Default.EventStartSound;
+				if (!string.IsNullOrEmpty(soundFilename))
+				{
+					try
+					{
+						using (SoundPlayer player = new SoundPlayer(soundFilename))
+						{
+							player.Play();
+						}
+					}
+					catch (Exception ex)
+					{
+						Log(ex);
+					}
+				}
+
+				StartDownload();
+			}
 		}
 
 		private void PiCamForm_Load(object sender, EventArgs e)
 		{
-			labelDownloadProgress.Text = "";
-			EnableMediaControls(false);
-			PopulateFramesetNamesCombo();
+			//labelDownloadProgress.Text = "";
+			//EnableMediaControls(false);
+			//PopulateFramesetNamesCombo();
 		}
 
 		void UpdateAutoStart()
