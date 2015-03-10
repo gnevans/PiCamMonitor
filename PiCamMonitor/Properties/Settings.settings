@@ -38,5 +38,11 @@
     <Setting Name="UseNotificationArea" Type="System.Boolean" Scope="Application">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="PiEventPort" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">2123</Value>
+    </Setting>
+    <Setting Name="EventStartSound" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

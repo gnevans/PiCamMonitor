@@ -130,5 +130,23 @@ namespace PiCamMonitor.Properties {
                 return ((bool)(this["UseNotificationArea"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2123")]
+        public int PiEventPort {
+            get {
+                return ((int)(this["PiEventPort"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EventStartSound {
+            get {
+                return ((string)(this["EventStartSound"]));
+            }
+        }
     }
 }

@@ -22,24 +22,91 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using WinSCP;
 
 namespace PiCamMonitor
 {
-	public class FileDownloader
+	public class PiCam
 	{
 		ILogger _logger;
+		//int _eventPort;
+		PiCamConfiguration _config;
 		Semaphore _downloaderSemaphore;
 
+		bool _keepListening;
+
+		public event EventHandler<PiCamEventArgs> EventReceived;
 		public event EventHandler<DownloadCompleteEventArgs> DownloadComplete;
 
-		public FileDownloader(ILogger logger)
+		public PiCam(ILogger logger, PiCamConfiguration config)
 		{
 			_logger = logger;
+			//_eventPort = port;
+			_config = config;
 			_downloaderSemaphore = new Semaphore(1, 1);
+		}
+
+		public string LiveStreamUrl { get { return _config.LiveStreamUrl; } }
+
+		public void StartListening()
+		{
+			_keepListening = true;
+
+			Thread t = new Thread(EventListenerThread);
+			t.IsBackground = true;
+			t.Start();
+		}
+
+		public void StopListening()
+		{
+			_keepListening = false;
+		}
+
+		void EventListenerThread()
+		{
+			UdpClient udpClient;
+
+			try
+			{
+				udpClient = new UdpClient(_config.EventPort);
+			}
+			catch (Exception ex)
+			{
+				_logger.Log(ex);
+				throw ex;
+			}
+
+			IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, _config.EventPort);
+			_logger.Log("Got end point");
+
+
+			while (_keepListening)
+			{
+				try
+				{
+					_logger.Log("About to start listening");
+					byte[] packet = udpClient.Receive(ref endPoint);
+					string packetMessage = Encoding.ASCII.GetString(packet, 0, packet.Length);
+
+					if (packetMessage.StartsWith("picam"))
+					{
+						if (EventReceived != null)
+						{
+							PiCamEventArgs eventArgs = new PiCamEventArgs();
+							eventArgs.EventData = packetMessage;
+							EventReceived(this, eventArgs);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.Log(ex);
+				}
+			}
 		}
 
 		public bool StartDownloading()
@@ -69,10 +136,10 @@ namespace PiCamMonitor
 				SessionOptions sessionOptions = new SessionOptions
 				{
 					Protocol = Protocol.Sftp,
-					HostName = Properties.Settings.Default.PiHost,
-					UserName = Properties.Settings.Default.PiUserName,
-					Password = Properties.Settings.Default.PiPassword,
-					SshHostKeyFingerprint = Properties.Settings.Default.PiSshHostKeyFingerprint
+					HostName = _config.RemoteHost,
+					UserName = _config.RemoteUserName,
+					Password = _config.RemotePassword,
+					SshHostKeyFingerprint = _config.RemoteSshKeyFingerprint
 				};
 
 				using (Session session = new Session())
@@ -87,7 +154,7 @@ namespace PiCamMonitor
 					TransferOperationResult transferResult;
 
 					stopwatch.Start();
-					RemoteDirectoryInfo dirInfo = session.ListDirectory(Properties.Settings.Default.PiMotionImagePath);
+					RemoteDirectoryInfo dirInfo = session.ListDirectory(_config.RemoteDirectoryPath);
 					stopwatch.Stop();
 					Console.WriteLine(string.Format("directory download took {0}ms", stopwatch.ElapsedMilliseconds));
 
@@ -116,13 +183,13 @@ namespace PiCamMonitor
 
 					foreach (string subDirName in subDirNames)
 					{
-						string destDir = Properties.Settings.Default.LocalBaseDownloadPath + @"\" +  subDirName + @"\";
+						string destDir = _config.LocalDirectoryPath + @"\" + subDirName + @"\";
 						// make sure it exists
 						if (!Directory.Exists(destDir))
 						{
 							Directory.CreateDirectory(destDir);
 						}
-						transferResult = session.GetFiles(Properties.Settings.Default.PiMotionImagePath + "/" + subDirName + "*.jpg", destDir, true, transferOptions);
+						transferResult = session.GetFiles(_config.RemoteDirectoryPath + "/" + subDirName + "*.jpg", destDir, true, transferOptions);
 
 						transferResult.Check();
 						numDownloaded += transferResult.Transfers.Count;
@@ -187,7 +254,7 @@ namespace PiCamMonitor
 		public string[] GetFramesetNames()
 		{
 			List<string> framesetNames = new List<string>();
-			string[] subDirs = Directory.GetDirectories(Properties.Settings.Default.LocalBaseDownloadPath);
+			string[] subDirs = Directory.GetDirectories(_config.LocalDirectoryPath);
 			foreach (string subDirPath in subDirs)
 			{
 				framesetNames.Add(SubDirPathToFramesetName(subDirPath));
@@ -222,8 +289,7 @@ namespace PiCamMonitor
 			// first remove any dashes from the name 
 			framesetName = framesetName.Replace("-", "");
 			// should now have the date (YYYYMMDD) which is the directory name
-			return Path.Combine(Properties.Settings.Default.LocalBaseDownloadPath, framesetName);
+			return Path.Combine(_config.LocalDirectoryPath, framesetName);
 		}
-
 	}
 }

@@ -28,6 +28,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,10 +40,13 @@ namespace PiCamMonitor
 	public partial class PiCamMonitorForm : Form, ILogger
 	{
 		bool _shutDown = false;
-		FileDownloader _downloader;
 		MJPEGStream _videoSource = new MJPEGStream();
 		FrameSet _frameSet = new FrameSet();
 		int _newFramesSinceLastView = 0;
+
+		// only a single PiCan supported at the moment
+		PiCamConfiguration _piCamConfig;
+		PiCam _piCam;
 
 		const string _autoStartKeyName = "GNE_PiCamMonitor";
 
@@ -50,18 +54,10 @@ namespace PiCamMonitor
 		public PiCamMonitorForm()
 		{
 			InitializeComponent();
-			_downloader = new FileDownloader(this);
-			_downloader.DownloadComplete += DownloadComplete;
 
-			// moved from _Load
 			UpdateAutoStart();
-			//EnableMediaControls(false);
-			//PopulateFramesetNamesCombo();
-			if (Settings.Default.DownloadAtStartup)
-			{
-				StartDownload();
-			}
-			StartPeriodicDownloads();
+
+			InitialisePiCams();
 
 			if (Settings.Default.UseNotificationArea)
 			{
@@ -75,17 +71,71 @@ namespace PiCamMonitor
 			}
 		}
 
+		void InitialisePiCams()
+		{
+			_piCamConfig = new PiCamConfiguration();
+
+			// following to support downloads
+			_piCamConfig.RemoteHost = Settings.Default.PiHost;
+			_piCamConfig.RemoteUserName = Settings.Default.PiUserName;
+			_piCamConfig.RemotePassword = Settings.Default.PiPassword;
+			_piCamConfig.RemoteSshKeyFingerprint = Settings.Default.PiSshHostKeyFingerprint;
+			_piCamConfig.RemoteDirectoryPath = Settings.Default.PiMotionImagePath;
+			_piCamConfig.LocalDirectoryPath = Settings.Default.LocalBaseDownloadPath;
+
+			// following to support live streaming
+			_piCamConfig.LiveStreamUrl = Settings.Default.PiStreamUrl;
+
+			// following to support event broadcasts
+			_piCamConfig.EventPort = Settings.Default.PiEventPort;
+
+			_piCam = new PiCam(this, _piCamConfig);
+
+			if (_piCamConfig.EventPort != 0)
+			{
+				_piCam.EventReceived += PiCam_EventReceived;
+				_piCam.StartListening();
+			}
+
+			_piCam.DownloadComplete += PiCam_DownloadComplete;
+
+			if (Settings.Default.DownloadAtStartup)
+			{
+				StartDownload();
+			}
+			StartPeriodicDownloads();
+		}
+
+		void PiCam_EventReceived(object sender, PiCamEventArgs e)
+		{
+			string eventData = e.EventData;
+			Log("Event: {0}", eventData);
+
+			// audio event
+			string soundFilename = Settings.Default.EventStartSound;
+			if (!string.IsNullOrEmpty(soundFilename))
+			{
+				try
+				{
+					using (SoundPlayer player = new SoundPlayer(soundFilename))
+					{
+						player.Play();
+					}
+				}
+				catch (Exception ex)
+				{
+					Log(ex);
+				}
+			}
+
+			StartDownload();
+		}
+
 		private void PiCamForm_Load(object sender, EventArgs e)
 		{
 			labelDownloadProgress.Text = "";
-			//UpdateAutoStart();
 			EnableMediaControls(false);
 			PopulateFramesetNamesCombo();
-			//if (Settings.Default.DownloadAtStartup)
-			//{
-			//	StartDownload();
-			//}
-			//StartPeriodicDownloads();
 		}
 
 		void UpdateAutoStart()
@@ -99,21 +149,16 @@ namespace PiCamMonitor
 			}
 		}
 
-
 		bool WantNotificationShown()
 		{
 			// don't bother showing notification if form is already visible
 			return !this.Visible;
 		}
 
-
 		private void PiCamForm_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			// stop anything that is running
-//			if (_videoSource.IsRunning)
-			{
-				StopLiveFeed();
-			}
+			StopLiveFeed();
 
 			StopFramesetPlay();
 
@@ -137,9 +182,9 @@ namespace PiCamMonitor
 			}
 		}
 
-		void StartLiveFeed()
+		void StartLiveFeed(PiCam piCam)
 		{
-			_videoSource = new MJPEGStream(Settings.Default.PiStreamUrl);
+			_videoSource = new MJPEGStream(piCam.LiveStreamUrl);
 			_videoSource.NewFrame += new AForge.Video.NewFrameEventHandler(NewFrameEventHandler);
 			_videoSource.Start();
 		}
@@ -163,7 +208,7 @@ namespace PiCamMonitor
 			string selectedFramesetName = (string)comboBoxFramesets.SelectedItem;
 			if (!string.IsNullOrEmpty(selectedFramesetName))
 			{
-				string[] files = _downloader.GetFilesForFrameset(selectedFramesetName);
+				string[] files = _piCam.GetFilesForFrameset(selectedFramesetName);
 				foreach (string filename in files)
 				{
 					_frameSet.AddFrame(filename);
@@ -220,6 +265,8 @@ namespace PiCamMonitor
 		{
 			// TODO: check if this gets fired twice?
 
+			PiCam curPiCam = _piCam;
+
 			// make sure everything is stopped first
 			StopLiveFeed();
 			pictureBox.Image = null;
@@ -230,7 +277,7 @@ namespace PiCamMonitor
 			}
 			else if (radioButtonViewLiveFeed.Checked)
 			{
-				StartLiveFeed();
+				StartLiveFeed(curPiCam);
 			}
 			else if (radioButtonViewDownloadedFrames.Checked)
 			{
@@ -345,7 +392,7 @@ namespace PiCamMonitor
 			comboBoxFramesets.BeginUpdate();
 			comboBoxFramesets.Items.Clear();
 
-			string[] framesetNames = _downloader.GetFramesetNames();
+			string[] framesetNames = _piCam.GetFramesetNames();
 			Array.Sort(framesetNames, (f1, f2) => f2.CompareTo(f1));
 			foreach (string framesetName in framesetNames)
 			{
@@ -459,14 +506,14 @@ namespace PiCamMonitor
 
 		void StartDownload()
 		{
-			if (_downloader.StartDownloading())
+			if (_piCam.StartDownloading())
 			{
 				labelDownloadProgress.Text = "Downloading...";
 				buttonCheckForFiles.Enabled = false;
 			}
 		}
 
-		void DownloadComplete(object sender, DownloadCompleteEventArgs e)
+		void PiCam_DownloadComplete(object sender, DownloadCompleteEventArgs e)
 		{
 			DownloadComplete(e.FramesDownloaded);
 		}

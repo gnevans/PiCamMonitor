@@ -62,9 +62,11 @@
   <ItemGroup>
     <Compile Include="AutoStart.cs" />
     <Compile Include="DownloadCompleteEventArgs.cs" />
-    <Compile Include="FileDownloader.cs" />
     <Compile Include="FrameSet.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="PiCamConfiguration.cs" />
+    <Compile Include="PiCamEventArgs.cs" />
+    <Compile Include="PiCam.cs" />
     <Compile Include="PiCamForm.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
